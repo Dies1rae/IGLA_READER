@@ -4,6 +4,12 @@
 #define NPLVL "04"
 #define WATERLVL "05"
 #define AVERAGETEMP "06"
+#define DENCITY "08"
+#define VOLUME "10"
+#define NPMASS "11"
+
+
+
 #define STARTDATA "@"
 #define ENDDATA "*"
 #define DEFDATALEN "00"

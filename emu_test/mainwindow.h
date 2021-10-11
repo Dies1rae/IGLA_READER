@@ -41,7 +41,13 @@ private slots:
     void on_exitpushButton_clicked();
 
 private:
+    bool checkCrc(const QByteArray& data);
+
     bool checkParamsFromForm();
+
+    bool checkBufferCorrect(const QByteArray& data);
+
+    uint8_t calcucateCrc(const std::string& sensornum);
 
     void getData();
 
@@ -57,8 +63,14 @@ private:
     QByteArray writeNP = "@";
     QByteArray writeWA = "@";
     QByteArray writeTM = "@";
+    QByteArray writeDEN = "@";
+    QByteArray writeVOL = "@";
+    QByteArray writeMASS = "@";
     QByteArray readNP;
     QByteArray readWA;
     QByteArray readTM;
+    QByteArray readDEN;
+    QByteArray readVOL;
+    QByteArray readMASS;
 };
 #endif // MAINWINDOW_H
