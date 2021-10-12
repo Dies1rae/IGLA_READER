@@ -30,13 +30,11 @@ bool MainWindow::serialConnect() {
 
 bool MainWindow::serialClose() {
     this->igla_serial_dev_.close();
+    return true;
 }
 
 void MainWindow::on_gDatapushButton_clicked()
-{
-    uint8_t buffer[18];
-    uint8_t CRCanswer;
-
+{ 
     this->getData();
 
     //bad to do
@@ -103,7 +101,6 @@ void MainWindow::on_gDatapushButton_clicked()
             this->igla_serial_dev_.write(this->writeVOL, 13);
             this->igla_serial_dev_.waitForReadyRead(1000);
             this->readVOL = this->igla_serial_dev_.readAll();
-
         }
     } else {
         QMessageBox::information(this, tr("ERROR"),  "Error in open COM port");
@@ -112,23 +109,23 @@ void MainWindow::on_gDatapushButton_clicked()
     this->serialClose();
 
     //parse and show info
-    this->checkCrc(this->readNP) ? ui->NPlvlLabel->setText(QString::fromStdString(std::to_string(std::stoul(this->readNP.toStdString().substr(7, 4), nullptr, 16)) + " mm")) :  ui->NPlvlLabel->setText("Sensor error");
+    this->fillMeasure();
+    this->tank_.npl_ != ERROR ? ui->NPlvlLabel->setText(QString::fromStdString(std::to_string(this->tank_.npl_) + " mm")) :  ui->NPlvlLabel->setText("Sensor error");
 
-    this->checkCrc(this->readWA) ? ui->WATERlvlLabel->setText(QString::fromStdString(std::to_string(std::stoul(this->readWA.toStdString().substr(7, 4), nullptr, 16)) + " mm")) : ui->WATERlvlLabel->setText("Sensor error");
+    this->tank_.wl_ != ERROR ? ui->WATERlvlLabel->setText(QString::fromStdString(std::to_string(this->tank_.wl_) + " mm")) : ui->WATERlvlLabel->setText("Sensor error");
 
-    this->checkCrc(this->readTM) ? ui->TemretureLabel->setText(QString::fromStdString(std::to_string(std::stoul(this->readTM.toStdString().substr(7, 4), nullptr, 16)) + " C")) : ui->TemretureLabel->setText("Sensor error");
+    this->tank_.av_temp_ != ERROR ? ui->TemretureLabel->setText(QString::fromStdString(std::to_string(this->tank_.av_temp_) + " C")) : ui->TemretureLabel->setText("Sensor error");
 
-    this->checkCrc(this->readDEN) ? ui->Denlable->setText(QString::fromStdString(std::to_string(std::stoul(this->readDEN.toStdString().substr(7, 4), nullptr, 16)) + " kg/m3")) : ui->Denlable->setText("Sensor error");
-
+    this->tank_.np_den_ != ERROR ? ui->Denlable->setText(QString::fromStdString(std::to_string(this->tank_.np_den_) + " kg/m3")) : ui->Denlable->setText("Sensor error");
+    qDebug() << sizeof(this->readNP) << this->readNP.size();
     //TODO MORE INFO IN SEPARATE METHOD
     ui->infoProcLbl->setText(QString::fromStdString(this->readNP.toStdString() + '\n' + this->readWA.toStdString() + '\n' + this->readTM.toStdString() + '\n' + this->readDEN.toStdString() + '\n' +
                                                     this->readMASS.toStdString() + '\n' + this->readVOL.toStdString() + '\n'));
-    qDebug() << this->readNP.size() << this->readVOL.size();
 }
 
 bool MainWindow::checkParamsFromForm()
 {
-    if(this->tank_.tank_no < 0 || this->tank_.tank_no > 9) {
+    if(this->tank_.tank_no < 0 || this->tank_.tank_no > 15) {
         return false;
     }
     return true;
@@ -145,19 +142,10 @@ void MainWindow::getData()
 {
     this->serial_port_num_ = ui->comlineEdit->text();
     this->tank_.tank_no = ui->tanklineEdit->text().toInt();
-    this->tank_.tank_no_xex = this->tank_.getTankNoHEX();
+    this->tank_.tank_no_xex = intToHex(this->tank_.tank_no);
     if(!this->checkParamsFromForm()) {
         QMessageBox::information(this, tr("ERROR"),  "Error in input data com\\tank");
     }
-}
-
-QString MainWindow::intToHex(const int data)
-{
-    char hex_string[20];
-    sprintf(hex_string, "%X", data);
-    QString res = hex_string;
-    data < 10 ? res.insert(0, '0') : res;
-    return res;
 }
 
 void MainWindow::initMainWindow()
@@ -174,7 +162,7 @@ void MainWindow::initMainWindow()
 
 bool MainWindow::checkCrc(const QByteArray& data) {
     uint8_t crc_src = data.at(1);
-    for(size_t ptr = 2; ptr < data.size() - 4; ptr++) {
+    for(int ptr = 2; ptr < data.size() - 4; ptr++) {
         crc_src ^= data.at(ptr);
     }
     crc_src > 0x0F ? crc_src = crc_src % 16, crc_src += 48 : crc_src += 64;
@@ -184,9 +172,16 @@ bool MainWindow::checkCrc(const QByteArray& data) {
 
 uint8_t MainWindow::calcucateCrc(const std::string& sensornum) {
     uint8_t calculated_crc = QString(sensornum[0]).toUInt(nullptr, 16) xor QString(sensornum[1]).toUInt(nullptr, 16) xor (this->tank_.tank_no_xex.toStdString()[0] - '0') xor (this->tank_.tank_no_xex.toStdString()[1] - '0');
-    return calculated_crc + 64;
+    return this->tank_.tank_no > 9 ? calculated_crc + 32 : calculated_crc + 64;
 }
 
 bool MainWindow::checkBufferCorrect(const QByteArray& data) {
     return data.toStdString()[0] == '@' && data.toStdString()[data.size() - 2] == '*';
+}
+
+void MainWindow::fillMeasure() {
+    this->checkCrc(this->readNP) ? this->tank_.npl_ = std::stoul(this->readNP.toStdString().substr(7, 4), nullptr, 16) + (std::stod(this->readNP.toStdString().substr(12, 1)) / 10.0) :  this->tank_.npl_ = ERROR;
+    this->checkCrc(this->readWA) ? this->tank_.wl_ = std::stoul(this->readWA.toStdString().substr(7, 4), nullptr, 16) + (std::stod(this->readWA.toStdString().substr(12, 1)) / 10.0)  : this->tank_.wl_ = ERROR;
+    this->checkCrc(this->readTM) ? this->tank_.av_temp_ = std::stoul(this->readTM.toStdString().substr(7, 4), nullptr, 16) + (std::stod(this->readTM.toStdString().substr(12, 1)) / 10.0)  : this->tank_.av_temp_ = ERROR;
+    this->checkCrc(this->readDEN) ? this->tank_.np_den_ = std::stoul(this->readDEN.toStdString().substr(7, 4), nullptr, 16) + (std::stod(this->readDEN.toStdString().substr(12, 1)) / 10.0)  : this->tank_.np_den_ = ERROR;
 }

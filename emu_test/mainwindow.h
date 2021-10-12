@@ -22,12 +22,6 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    enum sensor {
-        NP = 4,
-        WATER = 5,
-        TEMPRETURE = 6,
-    };
-
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
@@ -41,6 +35,8 @@ private slots:
     void on_exitpushButton_clicked();
 
 private:
+    void fillMeasure();
+
     bool checkCrc(const QByteArray& data);
 
     bool checkParamsFromForm();
@@ -51,8 +47,6 @@ private:
 
     void getData();
 
-    QString intToHex(const int data);
-
     void initMainWindow();
 
     Ui::MainWindow *ui;
@@ -60,12 +54,12 @@ private:
     QString serial_port_num_;
 
     Tank tank_;
-    QByteArray writeNP = "@";
-    QByteArray writeWA = "@";
-    QByteArray writeTM = "@";
-    QByteArray writeDEN = "@";
-    QByteArray writeVOL = "@";
-    QByteArray writeMASS = "@";
+    QByteArray writeNP = STARTDATA;
+    QByteArray writeWA = STARTDATA;
+    QByteArray writeTM = STARTDATA;
+    QByteArray writeDEN = STARTDATA;
+    QByteArray writeVOL = STARTDATA;
+    QByteArray writeMASS = STARTDATA;
     QByteArray readNP;
     QByteArray readWA;
     QByteArray readTM;
