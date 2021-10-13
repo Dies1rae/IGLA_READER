@@ -72,34 +72,34 @@ void MainWindow::on_gDatapushButton_clicked()
         while(!checkBufferCorrect(this->readNP)|| !checkBufferCorrect(this->readWA) || !checkBufferCorrect(this->readTM) ||
               !checkBufferCorrect(this->readDEN) || !checkBufferCorrect(this->readMASS) || !checkBufferCorrect(this->readVOL)) {
 
-            this->igla_serial_dev_.waitForBytesWritten(200);
+            this->igla_serial_dev_.waitForBytesWritten(15);
             this->igla_serial_dev_.write(this->writeNP, 11);
-            this->igla_serial_dev_.waitForReadyRead(1000);
+            this->igla_serial_dev_.waitForReadyRead(4);
             this->readNP = this->igla_serial_dev_.readAll();
 
-            this->igla_serial_dev_.waitForBytesWritten(200);
+            this->igla_serial_dev_.waitForBytesWritten(15);
             this->igla_serial_dev_.write(this->writeWA, 11);
-            this->igla_serial_dev_.waitForReadyRead(1000);
+            this->igla_serial_dev_.waitForReadyRead(4);
             this->readWA = this->igla_serial_dev_.readAll();
 
-            this->igla_serial_dev_.waitForBytesWritten(200);
+            this->igla_serial_dev_.waitForBytesWritten(15);
             this->igla_serial_dev_.write(this->writeTM, 11);
-            this->igla_serial_dev_.waitForReadyRead(1000);
+            this->igla_serial_dev_.waitForReadyRead(4);
             this->readTM = this->igla_serial_dev_.readAll();
 
-            this->igla_serial_dev_.waitForBytesWritten(200);
+            this->igla_serial_dev_.waitForBytesWritten(15);
             this->igla_serial_dev_.write(this->writeDEN, 11);
-            this->igla_serial_dev_.waitForReadyRead(1000);
+            this->igla_serial_dev_.waitForReadyRead(4);
             this->readDEN = this->igla_serial_dev_.readAll();
 
-            this->igla_serial_dev_.waitForBytesWritten(200);
+            this->igla_serial_dev_.waitForBytesWritten(15);
             this->igla_serial_dev_.write(this->writeMASS, 13);
-            this->igla_serial_dev_.waitForReadyRead(1000);
+            this->igla_serial_dev_.waitForReadyRead(4);
             this->readMASS = this->igla_serial_dev_.readAll();
 
-            this->igla_serial_dev_.waitForBytesWritten(200);
+            this->igla_serial_dev_.waitForBytesWritten(15);
             this->igla_serial_dev_.write(this->writeVOL, 13);
-            this->igla_serial_dev_.waitForReadyRead(1000);
+            this->igla_serial_dev_.waitForReadyRead(4);
             this->readVOL = this->igla_serial_dev_.readAll();
         }
     } else {
@@ -117,7 +117,6 @@ void MainWindow::on_gDatapushButton_clicked()
     this->tank_.av_temp_ != ERROR ? ui->TemretureLabel->setText(QString::fromStdString(std::to_string(this->tank_.av_temp_) + " C")) : ui->TemretureLabel->setText("Sensor error");
 
     this->tank_.np_den_ != ERROR ? ui->Denlable->setText(QString::fromStdString(std::to_string(this->tank_.np_den_) + " kg/m3")) : ui->Denlable->setText("Sensor error");
-    qDebug() << sizeof(this->readNP) << this->readNP.size();
     //TODO MORE INFO IN SEPARATE METHOD
     ui->infoProcLbl->setText(QString::fromStdString(this->readNP.toStdString() + '\n' + this->readWA.toStdString() + '\n' + this->readTM.toStdString() + '\n' + this->readDEN.toStdString() + '\n' +
                                                     this->readMASS.toStdString() + '\n' + this->readVOL.toStdString() + '\n'));
