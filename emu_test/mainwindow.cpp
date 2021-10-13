@@ -142,6 +142,7 @@ void MainWindow::getData()
     this->serial_port_num_ = ui->comlineEdit->text();
     this->tank_.tank_no = ui->tanklineEdit->text().toInt();
     this->tank_.tank_no_xex = intToHex(this->tank_.tank_no);
+    qDebug() << this->tank_.tank_no_xex << '=' << this->tank_.tank_no;
     if(!this->checkParamsFromForm()) {
         QMessageBox::information(this, tr("ERROR"),  "Error in input data com\\tank");
     }
