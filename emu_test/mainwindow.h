@@ -60,11 +60,13 @@ private:
     QByteArray writeDEN = STARTDATA;
     QByteArray writeVOL = STARTDATA;
     QByteArray writeMASS = STARTDATA;
+    QByteArray writeREFRESH = REFRESHDATA;
     QByteArray readNP;
     QByteArray readWA;
     QByteArray readTM;
     QByteArray readDEN;
     QByteArray readVOL;
     QByteArray readMASS;
+    QByteArray readREFRESHSTATUS;
 };
 #endif // MAINWINDOW_H

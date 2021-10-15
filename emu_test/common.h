@@ -7,8 +7,8 @@
 #define DENCITY "08"
 #define VOLUME "10"
 #define NPMASS "11"
-#define ERROR -99
-
+#define REFRESHDATA "@F08A004F*"
+#define ERROR 99
 
 #define STARTDATA "@"
 #define ENDDATA "*"

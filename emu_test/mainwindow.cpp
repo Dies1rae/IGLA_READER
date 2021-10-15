@@ -50,6 +50,7 @@ void MainWindow::on_gDatapushButton_clicked()
     this->readDEN.clear();
     this->readVOL.clear();
     this->readMASS.clear();
+    this->readREFRESHSTATUS.clear();
 
     //its bad too doo
     uint8_t CRCnp = this->calcucateCrc(NPLVL);
@@ -58,7 +59,6 @@ void MainWindow::on_gDatapushButton_clicked()
     uint8_t CRCDEN = this->calcucateCrc(DENCITY);
     uint8_t CRCVOL = this->calcucateCrc(VOLUME);
     uint8_t CRCMASS = this->calcucateCrc(NPMASS);
-
     //VERY BAD SHIT
     this->writeNP += this->tank_.tank_no_xex + QString(NPLVL) + QString(DEFDATALEN) + QString::number(CRCnp,16) + QString(ENDDATA);
     this->writeWA += this->tank_.tank_no_xex + QString(WATERLVL) + QString(DEFDATALEN) + QString::number(CRCwa,16) + QString(ENDDATA);
@@ -68,7 +68,15 @@ void MainWindow::on_gDatapushButton_clicked()
     this->writeVOL += this->tank_.tank_no_xex + QString(VOLUME) + QString(DEFDATALEN) + QString::number(CRCVOL,16) + QString(ENDDATA);
 
     //todo timer and SUCCESS GETTER INFO OR ERROR
+
     if(this->serialConnect()) {
+        this->igla_serial_dev_.waitForBytesWritten(15);
+        this->igla_serial_dev_.write(this->writeREFRESH, 11);
+        this->igla_serial_dev_.waitForReadyRead(1000);
+        this->readREFRESHSTATUS = this->igla_serial_dev_.readAll();
+        if(!!this->readREFRESHSTATUS.size()) {
+            return;
+        }
         while(!checkBufferCorrect(this->readNP)|| !checkBufferCorrect(this->readWA) || !checkBufferCorrect(this->readTM) ||
               !checkBufferCorrect(this->readDEN) || !checkBufferCorrect(this->readMASS) || !checkBufferCorrect(this->readVOL)) {
 
@@ -107,8 +115,8 @@ void MainWindow::on_gDatapushButton_clicked()
         return;
     }
     this->serialClose();
-
     //parse and show info
+
     this->fillMeasure();
     this->tank_.npl_ != ERROR ? ui->NPlvlLabel->setText(QString::fromStdString(std::to_string(this->tank_.npl_) + " mm")) :  ui->NPlvlLabel->setText("Sensor error");
 
@@ -118,8 +126,8 @@ void MainWindow::on_gDatapushButton_clicked()
 
     this->tank_.np_den_ != ERROR ? ui->Denlable->setText(QString::fromStdString(std::to_string(this->tank_.np_den_) + " kg/m3")) : ui->Denlable->setText("Sensor error");
     //TODO MORE INFO IN SEPARATE METHOD
-    ui->infoProcLbl->setText(QString::fromStdString(this->readNP.toStdString() + '\n' + this->readWA.toStdString() + '\n' + this->readTM.toStdString() + '\n' + this->readDEN.toStdString() + '\n' +
-                                                    this->readMASS.toStdString() + '\n' + this->readVOL.toStdString() + '\n'));
+    ui->infoProcLbl->setText(QString::fromStdString("---\n" + this->readNP.toStdString() + '\n' + this->readWA.toStdString() + '\n' + this->readTM.toStdString() + '\n' + this->readDEN.toStdString() + '\n' +
+                                                    this->readMASS.toStdString() + '\n' + this->readVOL.toStdString() + '\n' + this->readREFRESHSTATUS.toStdString() + '\n' + "---\n"));
 }
 
 bool MainWindow::checkParamsFromForm()
@@ -142,9 +150,11 @@ void MainWindow::getData()
     this->serial_port_num_ = ui->comlineEdit->text();
     this->tank_.tank_no = ui->tanklineEdit->text().toInt();
     this->tank_.tank_no_xex = intToHex(this->tank_.tank_no);
-    qDebug() << this->tank_.tank_no_xex << '=' << this->tank_.tank_no;
     if(!this->checkParamsFromForm()) {
-        QMessageBox::information(this, tr("ERROR"),  "Error in input data com\\tank");
+        QMessageBox::information(this, tr("ERROR"),  "Error in input data com\\tank\n Set default port to 0");
+        this->serial_port_num_ = "0";
+        this->tank_.tank_no = ui->tanklineEdit->text().toInt();
+        this->tank_.tank_no_xex = intToHex(this->tank_.tank_no);
     }
 }
 
@@ -163,6 +173,7 @@ void MainWindow::initMainWindow()
 bool MainWindow::checkCrc(const QByteArray& data) {
     uint8_t crc_src = data.at(1);
     for(int ptr = 2; ptr < data.size() - 4; ptr++) {
+        qDebug() << data.at(ptr);
         crc_src ^= data.at(ptr);
     }
     crc_src > 0x0F ? crc_src = crc_src % 16, crc_src += 48 : crc_src += 64;
@@ -182,6 +193,9 @@ bool MainWindow::checkBufferCorrect(const QByteArray& data) {
 void MainWindow::fillMeasure() {
     this->checkCrc(this->readNP) ? this->tank_.npl_ = std::stoul(this->readNP.toStdString().substr(7, 4), nullptr, 16) + (std::stod(this->readNP.toStdString().substr(12, 1)) / 10.0) :  this->tank_.npl_ = ERROR;
     this->checkCrc(this->readWA) ? this->tank_.wl_ = std::stoul(this->readWA.toStdString().substr(7, 4), nullptr, 16) + (std::stod(this->readWA.toStdString().substr(12, 1)) / 10.0)  : this->tank_.wl_ = ERROR;
-    this->checkCrc(this->readTM) ? this->tank_.av_temp_ = std::stoul(this->readTM.toStdString().substr(7, 4), nullptr, 16) + (std::stod(this->readTM.toStdString().substr(12, 1)) / 10.0)  : this->tank_.av_temp_ = ERROR;
+    this->checkCrc(this->readTM) ? this->tank_.av_temp_ = std::stoul(this->readTM.toStdString().substr(9, 2), nullptr, 16) + (std::stod(this->readTM.toStdString().substr(12, 1)) / 10.0)  : this->tank_.av_temp_ = ERROR;
+    if(this->readTM.toStdString()[7] == 'F' && this->readTM.toStdString()[8] == 'F') {
+        this->tank_.av_temp_ *= -1;
+    }
     this->checkCrc(this->readDEN) ? this->tank_.np_den_ = std::stoul(this->readDEN.toStdString().substr(7, 4), nullptr, 16) + (std::stod(this->readDEN.toStdString().substr(12, 1)) / 10.0)  : this->tank_.np_den_ = ERROR;
 }
