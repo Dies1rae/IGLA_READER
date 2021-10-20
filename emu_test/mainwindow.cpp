@@ -115,8 +115,8 @@ void MainWindow::on_gDatapushButton_clicked()
         return;
     }
     this->serialClose();
+    qDebug() << this->writeVOL;
     //parse and show info
-
     this->fillMeasure();
     this->tank_.npl_ != ERROR ? ui->NPlvlLabel->setText(QString::fromStdString(std::to_string(this->tank_.npl_) + " mm")) :  ui->NPlvlLabel->setText("Sensor error");
 
@@ -173,7 +173,6 @@ void MainWindow::initMainWindow()
 bool MainWindow::checkCrc(const QByteArray& data) {
     uint8_t crc_src = data.at(1);
     for(int ptr = 2; ptr < data.size() - 4; ptr++) {
-        qDebug() << data.at(ptr);
         crc_src ^= data.at(ptr);
     }
     crc_src > 0x0F ? crc_src = crc_src % 16, crc_src += 48 : crc_src += 64;
@@ -199,3 +198,4 @@ void MainWindow::fillMeasure() {
     }
     this->checkCrc(this->readDEN) ? this->tank_.np_den_ = std::stoul(this->readDEN.toStdString().substr(7, 4), nullptr, 16) + (std::stod(this->readDEN.toStdString().substr(12, 1)) / 10.0)  : this->tank_.np_den_ = ERROR;
 }
+

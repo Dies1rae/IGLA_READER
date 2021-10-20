@@ -11,7 +11,7 @@ using namespace measuredataset;
 inline QString intToHex(uint8_t data) {
     const std::array<char, 16> sym({'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'});
     std::string hex_string(2, 0);
-    hex_string[0] = sym[data & 0xF0u];
+    hex_string[0] = sym[(data >> 4) & 0x0Fu];
     hex_string[1] = sym[data & 0x0Fu];
     return QString::fromStdString(hex_string);
 }
